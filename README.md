@@ -55,7 +55,5 @@ open index.html
 - Player stats: `https://api-web.nhle.com/v1/player/{id}/landing`
 
 Both endpoints are public and require no authentication.
-
 ---
-
-Built by [Jack Mortson](https://jdmortson.github.io) · Part of my personal portfolio
+Part of my personal portfolio
