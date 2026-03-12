@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHL Stats Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #080b12;
+    --surface: #0f1320;
+    --surface2: #161c2e;
+    --blue: #0ea5e9;
+    --blue-glow: rgba(14,165,233,0.12);
+    --white: #f0f6ff;
+    --muted: #5a6a88;
+    --border: rgba(14,165,233,0.14);
+    --green: #22c55e;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background rink lines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 80px,
+      rgba(14,165,233,0.018) 80px,
+      rgba(14,165,233,0.018) 81px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  header {
+    position: relative; z-index: 1;
+    padding: 2.5rem 4rem 0;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .header-left {}
+  .back-link {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 1.2rem;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--blue); }
+  .back-link svg { width: 14px; height: 14px; }
+  .site-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+  }
+  .site-title span { color: var(--blue); }
+  .site-sub {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.6rem;
+  }
+  .live-badge {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(34,197,94,0.3);
+    background: rgba(34,197,94,0.06);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+    align-self: flex-start;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  /* Main layout */
+  main {
+    position: relative; z-index: 1;
+    padding: 3rem 4rem 6rem;
+    max-width: 1300px;
+  }
+
+  /* Search bar */
+  .search-section {
+    margin-bottom: 3rem;
+  }
+  .search-label {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+  .search-bar {
+    display: flex; gap: 0;
+    max-width: 560px;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 0.9rem 1.2rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--blue); }
+  .search-input::placeholder { color: var(--muted); }
+  .search-btn {
+    padding: 0.9rem 2rem;
+    background: var(--blue);
+    color: var(--black);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { background: #38bdf8; }
+  .search-btn:active { transform: scale(0.98); }
+
+  /* Quick searches */
+  .quick-searches {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-top: 0.9rem;
+    flex-wrap: wrap;
+  }
+  .quick-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .quick-btn {
+    padding: 0.3rem 0.8rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: rgba(240,246,255,0.6);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  }
+  .quick-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-glow); }
+
+  /* Divider */
+  .divider { width: 100%; height: 1px; background: var(--border); margin-bottom: 2.5rem; }
+
+  /* Results area */
+  #results-area { min-height: 300px; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1rem;
+    padding: 6rem 2rem;
+    text-align: center;
+  }
+  .empty-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+  }
+  .empty-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .empty-sub { font-size: 0.85rem; color: var(--muted); max-width: 300px; }
+
+  /* Loading */
+  .loading-state {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.75rem;
+    padding: 4rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--blue);
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* Error */
+  .error-state {
+    padding: 2rem;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #f87171;
+    text-align: center;
+  }
+
+  /* Player card */
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    overflow: hidden;
+    animation: fadeUp 0.4s ease forwards;
+  }
+  .player-card-top {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 2rem;
+    align-items: center;
+    padding: 2.5rem 3rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .player-card-top::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(to right, var(--blue), transparent);
+  }
+  .player-jersey {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 5rem;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(14,165,233,0.25);
+    line-height: 1;
+    min-width: 100px;
+    text-align: center;
+  }
+  .player-info {}
+  .player-full-name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    margin-bottom: 0.6rem;
+  }
+  .player-meta {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .meta-pill {
+    padding: 0.25rem 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .meta-pill.team { color: var(--blue); border-color: rgba(14,165,233,0.3); background: var(--blue-glow); }
+  .season-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .season-year {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--white);
+    text-align: right;
+  }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: none;
+  }
+  .stat-block {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.2s;
+  }
+  .stat-block:last-child { border-right: none; }
+  .stat-block:hover { background: var(--blue-glow); }
+  .stat-block.highlight .stat-val { color: var(--blue); }
+  .stat-val {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 3rem;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .stat-key {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+  .stat-desc {
+    font-size: 0.7rem;
+    color: rgba(90,106,136,0.7);
+  }
+
+  /* Suggestions dropdown */
+  .suggestions-wrap { position: relative; max-width: 560px; }
+  .suggestions {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: none;
+    z-index: 50;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .suggestion-item {
+    padding: 0.75rem 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: var(--blue-glow); color: var(--blue); }
+  .suggestion-team {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* Footer */
+  footer {
+    position: relative; z-index: 1;
+    padding: 2rem 4rem;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  footer p {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  footer a { color: var(--blue); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  @media (max-width: 800px) {
+    header, main, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .stat-block:nth-child(3) { border-right: none; }
+    .stat-block:nth-child(4), .stat-block:nth-child(5), .stat-block:nth-child(6) {
+      border-top: 1px solid var(--border);
+    }
+    .player-card-top { grid-template-columns: 1fr; gap: 1rem; }
+    .player-jersey { font-size: 3rem; min-width: auto; text-align: left; }
+    .season-label, .season-year { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a href="https://jdmortson.github.io" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to Portfolio
+    </a>
+    <h1 class="site-title">NHL Stats<br><span>Tracker</span></h1>
+    <p class="site-sub">2024–25 Season &nbsp;·&nbsp; Live NHL API</p>
+  </div>
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    Live Data
+  </div>
+</header>
+
+<main>
+  <div class="search-section">
+    <span class="search-label">Search any active NHL player</span>
+    <div class="suggestions-wrap">
+      <div class="search-bar">
+        <input
+          type="text"
+          class="search-input"
+          id="player-search"
+          placeholder="e.g. McDavid, Crosby, Pastrnak..."
+          autocomplete="off"
+        />
+        <button class="search-btn" id="search-btn">Search</button>
+      </div>
+      <div class="suggestions" id="suggestions" style="display:none;"></div>
+    </div>
+    <div class="quick-searches">
+      <span class="quick-label">Try:</span>
+      <button class="quick-btn" onclick="quickSearch('McDavid')">McDavid</button>
+      <button class="quick-btn" onclick="quickSearch('Ovechkin')">Ovechkin</button>
+      <button class="quick-btn" onclick="quickSearch('Crosby')">Crosby</button>
+      <button class="quick-btn" onclick="quickSearch('Pastrnak')">Pastrnak</button>
+      <button class="quick-btn" onclick="quickSearch('Hughes')">Hughes</button>
+      <button class="quick-btn" onclick="quickSearch('Makar')">Makar</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div id="results-area">
+    <div class="empty-state">
+      <div class="empty-icon">🏒</div>
+      <div class="empty-title">Search a Player</div>
+      <p class="empty-sub">Enter any active NHL player's name to pull their current season stats.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Built by <a href="https://jdmortson.github.io">Jack Mortson</a> &nbsp;·&nbsp; Data via NHL Public API</p>
+  <p>Stats reflect current 2024–25 regular season</p>
+</footer>
+
+<script>
+  const searchInput = document.getElementById('player-search');
+  const searchBtn = document.getElementById('search-btn');
+  const resultsArea = document.getElementById('results-area');
+  const suggestionsEl = document.getElementById('suggestions');
+
+  // Quick search buttons
+  function quickSearch(name) {
+    searchInput.value = name;
+    hideSuggestions();
+    doSearch(name);
+  }
+
+  // Suggestions as user types
+  let suggestTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(suggestTimeout);
+    const val = searchInput.value.trim();
+    if (val.length < 2) { hideSuggestions(); return; }
+    suggestTimeout = setTimeout(() => fetchSuggestions(val), 280);
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { hideSuggestions(); doSearch(searchInput.value.trim()); }
+    if (e.key === 'Escape') hideSuggestions();
+  });
+
+  searchBtn.addEventListener('click', () => {
+    hideSuggestions();
+    doSearch(searchInput.value.trim());
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.suggestions-wrap')) hideSuggestions();
+  });
+
+  function hideSuggestions() { suggestionsEl.style.display = 'none'; }
+
+  async function fetchSuggestions(query) {
+    try {
+      const res = await fetch(`https://suggest.svc.nhl.com/svc/suggest/v1/minactiveplayers/${encodeURIComponent(query)}/6`);
+      const data = await res.json();
+      const players = data.suggestions || [];
+      if (!players.length) { hideSuggestions(); return; }
+
+      suggestionsEl.innerHTML = players.map(p => {
+        const parts = p.split('|');
+        const id = parts[0], last = parts[1], first = parts[2], team = parts[5] || '';
+        return `<div class="suggestion-item" onclick="selectSuggestion('${first} ${last}', '${id}')">
+          <span>${first} ${last}</span>
+          <span class="suggestion-team">${team}</span>
+        </div>`;
+      }).join('');
+      suggestionsEl.style.display = 'block';
+    } catch { hideSuggestions(); }
+  }
+
+  async function selectSuggestion(name, id) {
+    searchInput.value = name;
+    hideSuggestions();
+    await fetchPlayerById(id, name);
+  }
+
+  async function doSearch(query) {
+    if (!query) return;
+    showLoading();
+    try {
+      const res = await fetch(`https://suggest.svc.nhl.com/svc/suggest/v1/minactiveplayers/${encodeURIComponent(query)}/1`);
+      const data = await res.json();
+      const players = data.suggestions || [];
+      if (!players.length) { showError(`No active player found for "${query}"`); return; }
+      const parts = players[0].split('|');
+      await fetchPlayerById(parts[0], `${parts[2]} ${parts[1]}`);
+    } catch {
+      showError('Could not connect to NHL API. Please try again.');
+    }
+  }
+
+  async function fetchPlayerById(id, fallbackName) {
+    showLoading();
+    try {
+      const res = await fetch(`https://api-web.nhle.com/v1/player/${id}/landing`);
+      const data = await res.json();
+      renderPlayer(data);
+    } catch {
+      showError(`Could not load stats for ${fallbackName}.`);
+    }
+  }
+
+  function showLoading() {
+    resultsArea.innerHTML = `<div class="loading-state"><div class="spinner"></div>Fetching stats...</div>`;
+  }
+
+  function showError(msg) {
+    resultsArea.innerHTML = `<div class="error-state">${msg}</div>`;
+  }
+
+  function renderPlayer(d) {
+    const firstName = d.firstName?.default || '';
+    const lastName = d.lastName?.default || '';
+    const number = d.sweaterNumber || '–';
+    const team = d.currentTeamAbbrev || d.lastTeamAbbrev || '–';
+    const position = d.position || '–';
+    const nationality = d.birthCountry || '';
+
+    const sub = d.featuredStats?.regularSeason?.subSeason || {};
+    const career = d.featuredStats?.regularSeason?.career || {};
+
+    const goals = sub.goals ?? '–';
+    const assists = sub.assists ?? '–';
+    const points = sub.points ?? '–';
+    const pm = sub.plusMinus !== undefined ? (sub.plusMinus > 0 ? `+${sub.plusMinus}` : sub.plusMinus) : '–';
+    const gp = sub.gamesPlayed ?? '–';
+    const toi = sub.avgToi || '–';
+
+    const isGoalie = position === 'G';
+    const statsHTML = isGoalie ? renderGoalieStats(sub) : renderSkaterStats(goals, assists, points, pm, gp, toi);
+
+    const seasonLabel = d.featuredStats?.season
+      ? `${String(d.featuredStats.season).slice(0,4)}–${String(d.featuredStats.season).slice(4,6)}`
+      : '2024–25';
+
+    resultsArea.innerHTML = `
+      <div class="player-card">
+        <div class="player-card-top">
+          <div class="player-jersey">#${number}</div>
+          <div class="player-info">
+            <div class="player-full-name">${firstName} ${lastName}</div>
+            <div class="player-meta">
+              <span class="meta-pill team">${team}</span>
+              <span class="meta-pill">${position}</span>
+              ${nationality ? `<span class="meta-pill">${nationality}</span>` : ''}
+            </div>
+          </div>
+          <div>
+            <div class="season-label">Season</div>
+            <div class="season-year">${seasonLabel}</div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          ${statsHTML}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSkaterStats(goals, assists, points, pm, gp, toi) {
+    return `
+      <div class="stat-block highlight">
+        <div class="stat-val">${points}</div>
+        <div class="stat-key">PTS</div>
+        <div class="stat-desc">Points</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val">${goals}</div>
+        <div class="stat-key">G</div>
+        <div class="stat-desc">Goals</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val">${assists}</div>
+        <div class="stat-key">A</div>
+        <div class="stat-desc">Assists</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val">${pm}</div>
+        <div class="stat-key">+/−</div>
+        <div class="stat-desc">Plus/Minus</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val">${gp}</div>
+        <div class="stat-key">GP</div>
+        <div class="stat-desc">Games Played</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val">${toi}</div>
+        <div class="stat-key">TOI</div>
+        <div class="stat-desc">Avg Ice Time</div>
+      </div>
+    `;
+  }
+
+  function renderGoalieStats(sub) {
+    const wins = sub.wins ?? '–';
+    const losses = sub.losses ?? '–';
+    const gaa = sub.goalsAgainstAvg ? sub.goalsAgainstAvg.toFixed(2) : '–';
+    const svpct = sub.savePctg ? `.${String(Math.round(sub.savePctg * 1000)).padStart(3,'0')}` : '–';
+    const so = sub.shutouts ?? '–';
+    const gp = sub.gamesPlayed ?? '–';
+    return `
+      <div class="stat-block highlight"><div class="stat-val">${wins}</div><div class="stat-key">W</div><div class="stat-desc">Wins</div></div>
+      <div class="stat-block"><div class="stat-val">${losses}</div><div class="stat-key">L</div><div class="stat-desc">Losses</div></div>
+      <div class="stat-block"><div class="stat-val">${gaa}</div><div class="stat-key">GAA</div><div class="stat-desc">Goals Against Avg</div></div>
+      <div class="stat-block"><div class="stat-val">${svpct}</div><div class="stat-key">SV%</div><div class="stat-desc">Save Pct</div></div>
+      <div class="stat-block"><div class="stat-val">${so}</div><div class="stat-key">SO</div><div class="stat-desc">Shutouts</div></div>
+      <div class="stat-block"><div class="stat-val">${gp}</div><div class="stat-key">GP</div><div class="stat-desc">Games Played</div></div>
+    `;
+  }
+</script>
+</body>
+</html>
